@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Large / generated artifacts
+data/
+models/*.task
+models/*.pt
+models/labels.json
+!models/.gitkeep

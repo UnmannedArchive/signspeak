@@ -1,0 +1,14 @@
+# Core CV + numerics
+mediapipe>=0.10.18
+opencv-python>=4.9
+numpy>=1.26
+
+# Model
+torch>=2.2
+
+# Training utilities
+scikit-learn>=1.4
+tqdm>=4.66
+
+# Tests
+pytest>=8.0
