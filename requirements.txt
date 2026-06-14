@@ -16,5 +16,9 @@ anthropic>=0.69
 # Data acquisition (scripts/download_wlasl.py)
 yt-dlp>=2025.1
 
+# Local web UI (asl/web.py)
+fastapi>=0.115
+uvicorn>=0.30
+
 # Tests
 pytest>=8.0
