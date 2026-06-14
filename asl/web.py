@@ -17,7 +17,8 @@ from collections import deque
 
 import numpy as np
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               StreamingResponse)
 
 from . import config as C
 
@@ -185,6 +186,23 @@ def video():
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
+@app.get("/teach")
+def teach(text: str = ""):
+    from . import teach as teach_mod
+
+    return JSONResponse(teach_mod.plan(text))
+
+
+@app.get("/clip/{video_id}.mp4")
+def clip(video_id: str):
+    if not video_id.isdigit():
+        return JSONResponse({"error": "bad id"}, status_code=400)
+    path = C.WLASL_VIDEO_DIR / f"{video_id}.mp4"
+    if not path.exists():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(path, media_type="video/mp4")
+
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -197,6 +215,10 @@ PAGE = """<!doctype html>
   header { padding:18px 24px; border-bottom:1px solid #21262d; }
   header h1 { margin:0; font-size:18px; letter-spacing:.2px; }
   header p { margin:4px 0 0; color:#8b949e; font-size:13px; }
+  .tabs { display:flex; gap:6px; padding:12px 24px 0; }
+  .tab { background:#161b22; border:1px solid #21262d; border-bottom:none; color:#8b949e;
+         padding:8px 16px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; }
+  .tab.active { background:#0d1117; color:#e6edf3; border-color:#30363d; }
   .wrap { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:20px; padding:24px; max-width:1100px; margin:0 auto; }
   @media (max-width: 820px){ .wrap{ grid-template-columns:1fr; } }
   .video { background:#000; border-radius:12px; overflow:hidden; border:1px solid #21262d; aspect-ratio:4/3; }
@@ -215,35 +237,79 @@ PAGE = """<!doctype html>
   .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; }
   .ok { background:#1f6f3f33; color:#7ee787; } .off { background:#6e252533; color:#ff7b72; }
   button { background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:8px;
-           padding:6px 12px; font-size:13px; cursor:pointer; }
+           padding:8px 14px; font-size:14px; cursor:pointer; }
   button:hover { background:#30363d; }
+  .teach { padding:24px; max-width:1100px; margin:0 auto; }
+  .mic { font-size:16px; padding:12px 22px; background:#1f6feb; border-color:#1f6feb; color:#fff; }
+  .mic:disabled { opacity:.6; }
+  .ask { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 4px; }
+  #sentence-in { flex:1; min-width:240px; background:#0d1117; border:1px solid #30363d;
+                 color:#e6edf3; border-radius:8px; padding:10px 12px; font-size:15px; }
+  .glossline { color:#d2a8ff; font-size:15px; letter-spacing:.5px; margin:14px 0; min-height:20px; }
+  .steps { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; }
+  .step { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:10px; }
+  .step video { width:100%; border-radius:8px; background:#000; aspect-ratio:1/1; object-fit:cover; }
+  .step .fs { display:flex; align-items:center; justify-content:center; aspect-ratio:1/1;
+              border:1px dashed #30363d; border-radius:8px; color:#8b949e; text-align:center; }
+  .step .sg { font-weight:700; margin:8px 2px 4px; }
+  .step .sh { color:#8b949e; font-size:12px; line-height:1.4; }
 </style></head>
 <body>
   <header>
     <h1>ASL sign recognizer <span id="cam" class="pill off">camera off</span></h1>
-    <p>18 signs · bidirectional LSTM on MediaPipe landmarks · sentence layer via Claude</p>
+    <p>18 signs · bidirectional LSTM on MediaPipe landmarks · Claude sentence + teaching layer</p>
   </header>
-  <div class="wrap">
-    <div class="video"><img src="/video" alt="webcam feed"></div>
-    <div class="panel">
-      <div class="card">
-        <div class="label">Recognized</div>
-        <div class="word" id="word">—</div>
-        <div class="phrase" id="phrase"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="recognize" onclick="showTab('recognize')">Recognize → English</div>
+    <div class="tab" data-tab="teach" onclick="showTab('teach')">Speak → Teach me to sign</div>
+  </div>
+
+  <div id="tab-recognize">
+    <div class="wrap">
+      <div class="video"><img src="/video" alt="webcam feed"></div>
+      <div class="panel">
+        <div class="card">
+          <div class="label">Recognized</div>
+          <div class="word" id="word">—</div>
+          <div class="phrase" id="phrase"></div>
+        </div>
+        <div class="card">
+          <div class="label">Live top-3</div>
+          <div id="topk"></div>
+        </div>
+        <div class="card">
+          <div class="label">English</div>
+          <div class="sentence" id="sentence"></div>
+        </div>
+        <div class="muted"><span id="fps">0</span> fps</div>
       </div>
-      <div class="card">
-        <div class="label">Live top-3</div>
-        <div id="topk"></div>
-      </div>
-      <div class="card">
-        <div class="label">English</div>
-        <div class="sentence" id="sentence"></div>
-      </div>
-      <div class="muted"><span id="fps">0</span> fps</div>
     </div>
   </div>
+
+  <div id="tab-teach" style="display:none">
+    <div class="teach">
+      <div class="ask">
+        <button class="mic" id="mic">🎤 Speak a sentence</button>
+        <input id="sentence-in" placeholder="…or type a sentence, e.g. I want to drink water">
+        <button id="go">Show me</button>
+      </div>
+      <div class="muted" id="teach-status">Click the mic and say something, or type it and hit “Show me”.</div>
+      <div class="glossline" id="teach-gloss"></div>
+      <div class="steps" id="steps"></div>
+    </div>
+  </div>
+
 <script>
+let RECOG_ACTIVE = true;
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.getElementById('tab-recognize').style.display = name==='recognize'?'':'none';
+  document.getElementById('tab-teach').style.display = name==='teach'?'':'none';
+  RECOG_ACTIVE = (name==='recognize');
+}
+
 async function tick(){
+  if(!RECOG_ACTIVE) return;
   try {
     const s = await (await fetch('/state')).json();
     document.getElementById('word').textContent = s.word || '—';
@@ -260,6 +326,44 @@ async function tick(){
   } catch(e){}
 }
 setInterval(tick, 200); tick();
+
+function setStatus(t){ document.getElementById('teach-status').textContent = t; }
+function renderTeach(d){
+  document.getElementById('teach-gloss').textContent = (d.gloss||[]).join('   ·   ');
+  document.getElementById('steps').innerHTML = (d.steps||[]).map(s => {
+    const media = s.video_id
+      ? `<video src="/clip/${s.video_id}.mp4" autoplay muted loop playsinline></video>`
+      : `<div class="fs">✋ fingerspell<br><b>${s.gloss}</b></div>`;
+    return `<div class="step">${media}<div class="sg">${s.gloss}</div>
+            <div class="sh">${s.how_to||''}</div></div>`;
+  }).join('') || '<div class="muted">No signs found — try another sentence.</div>';
+}
+async function runTeach(text){
+  if(!text || !text.trim()) return;
+  setStatus('Planning the signs for “'+text+'” …');
+  document.getElementById('steps').innerHTML = '';
+  try {
+    const d = await (await fetch('/teach?text='+encodeURIComponent(text))).json();
+    setStatus('“'+d.sentence+'”  →  ' +
+      (d.source==='claude' ? 'reordered into ASL grammar by Claude'
+                           : 'word order (set ANTHROPIC_API_KEY for ASL grammar + notes)'));
+    renderTeach(d);
+  } catch(e){ setStatus('Sorry — could not plan the signs.'); }
+}
+document.getElementById('go').onclick = () => runTeach(document.getElementById('sentence-in').value);
+document.getElementById('sentence-in').addEventListener('keydown', e=>{ if(e.key==='Enter') runTeach(e.target.value); });
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+document.getElementById('mic').onclick = () => {
+  if(!SR){ setStatus('Speech recognition is not available in this browser — type your sentence instead.'); return; }
+  const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
+  const btn = document.getElementById('mic'); btn.disabled = true; setStatus('Listening… speak now.');
+  rec.onresult = e => { const t = e.results[0][0].transcript;
+                        document.getElementById('sentence-in').value = t; runTeach(t); };
+  rec.onerror = e => setStatus('Mic error: ' + e.error + ' (you can type instead).');
+  rec.onend = () => { btn.disabled = false; };
+  rec.start();
+};
 </script>
 </body></html>"""
 
