@@ -23,6 +23,7 @@ class SignLSTM(nn.Module):
         hidden: int = C.LSTM_HIDDEN,
         layers: int = C.LSTM_LAYERS,
         dropout: float = C.LSTM_DROPOUT,
+        bidirectional: bool = True,
     ):
         super().__init__()
         self.lstm = nn.LSTM(
@@ -31,17 +32,19 @@ class SignLSTM(nn.Module):
             num_layers=layers,
             batch_first=True,
             dropout=dropout if layers > 1 else 0.0,
+            bidirectional=bidirectional,
         )
+        feat = hidden * (2 if bidirectional else 1)
         self.head = nn.Sequential(
-            nn.LayerNorm(hidden),
+            nn.LayerNorm(feat),
             nn.Dropout(dropout),
-            nn.Linear(hidden, num_classes),
+            nn.Linear(feat, num_classes),
         )
 
     def forward(self, x):  # x: (B, T, F)
         out, _ = self.lstm(x)
-        last = out[:, -1, :]      # final timestep summary
-        return self.head(last)
+        pooled = out.mean(dim=1)   # average over time — robust for short clips
+        return self.head(pooled)
 
 
 def save_model(model: SignLSTM, labels: list[str], weights_path: Path = C.MODEL_WEIGHTS,

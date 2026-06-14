@@ -78,14 +78,14 @@ class SentenceBuilder:
         self._last_word = None
 
 
-def _softmax_top(model, buffer, device):
+def _softmax_topk(model, buffer, device, k=3):
     import torch
 
     x = torch.tensor(np.stack(buffer)[None], dtype=torch.float32, device=device)
     with torch.no_grad():
         probs = torch.softmax(model(x), dim=1)[0]
-    conf, idx = probs.max(0)
-    return int(idx.item()), float(conf.item())
+    conf, idx = probs.topk(min(k, probs.shape[0]))
+    return [(int(i), float(c)) for i, c in zip(idx.tolist(), conf.tolist())]
 
 
 def main():
@@ -149,10 +149,10 @@ def main():
             if pose_present:
                 buffer.append(vec)
 
-            live_label, live_conf = "...", 0.0
+            topk = []
             if len(buffer) == C.SEQ_LEN and pose_present:
-                idx, conf = _softmax_top(model, buffer, device)
-                live_label, live_conf = labels[idx], conf
+                topk = _softmax_topk(model, buffer, device, k=3)
+                idx, conf = topk[0]
                 committed = debouncer.update(idx, conf, labels)
                 builder.note_commit(committed, now)
 
@@ -167,7 +167,7 @@ def main():
                 cur_sentence, cur_translating = sentence_text, translating
 
             draw_overlay(frame, result)
-            _draw_hud(cv2, frame, debouncer.committed, live_label, live_conf,
+            _draw_hud(cv2, frame, debouncer.committed, topk, labels,
                       len(buffer), fps, builder.glosses, cur_sentence, cur_translating)
 
             dt = now - prev_t
@@ -195,7 +195,7 @@ def main():
         extractor.close()
 
 
-def _draw_hud(cv2, frame, committed, live_label, live_conf, buf_len, fps,
+def _draw_hud(cv2, frame, committed, topk, labels, buf_len, fps,
               glosses, sentence, translating):
     h, w = frame.shape[:2]
 
@@ -221,10 +221,19 @@ def _draw_hud(cv2, frame, committed, live_label, live_conf, buf_len, fps,
         cv2.putText(frame, text, (20, h - 28), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
                     color, 2, cv2.LINE_AA)
 
-    # live guess + buffer fill + fps
-    sub = f"live: {live_label} ({live_conf:.0%})"
-    cv2.putText(frame, sub, (20, h - 84), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
-                (200, 200, 200), 1, cv2.LINE_AA)
+    # live top-3 guesses (brightest = most confident)
+    y0 = h - 110
+    if topk:
+        for rank, (idx, conf) in enumerate(topk):
+            shade = 235 if rank == 0 else 160 - rank * 30
+            cv2.putText(frame, f"{labels[idx]:<10s} {conf:4.0%}",
+                        (20, y0 + rank * 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (shade, shade, shade), 1, cv2.LINE_AA)
+    else:
+        cv2.putText(frame, "...", (20, y0), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    (160, 160, 160), 1, cv2.LINE_AA)
+
+    # buffer fill + fps
     bar_w = int((buf_len / C.SEQ_LEN) * 180)
     cv2.rectangle(frame, (w - 200, 18), (w - 20, 30), (80, 80, 80), 1)
     cv2.rectangle(frame, (w - 200, 18), (w - 200 + bar_w, 30), (80, 220, 80), -1)
