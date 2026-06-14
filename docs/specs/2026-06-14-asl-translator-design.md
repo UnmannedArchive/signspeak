@@ -115,10 +115,16 @@ tested: translate by the shoulder midpoint, scale by shoulder width.
 
 ## Phasing
 
-- **Phase 1 (this build):** WLASL subset, landmark pipeline, LSTM, OpenCV live
-  demo, tests.
-- **Phase 2 (later):** VLM layer to render glosses as fluent English;
-  fingerspelling fallback; larger vocabulary; web UI and deployment.
+- **Phase 1 (built):** WLASL subset, landmark pipeline, LSTM, OpenCV live demo,
+  tests.
+- **Phase 2 — sentence layer (built):** `asl/translator.py` renders a phrase of
+  committed glosses as fluent English via Claude (`claude-opus-4-8` by default),
+  with a plain word-join fallback when no `ANTHROPIC_API_KEY` is set. The live
+  loop accumulates committed signs, finalizes on a pause (or space), and
+  translates on a background thread so the video never stalls. `SentenceBuilder`
+  is unit-tested.
+- **Phase 2 — remaining (later):** fingerspelling fallback; larger vocabulary;
+  web UI and deployment.
 
 ## Risks / honest caveats
 

@@ -77,11 +77,31 @@ and that the training pipeline can learn separable signs from synthetic data.
 ## Run the live demo
 
 ```bash
-python -m asl.infer_live      # press q or Esc to quit
+python -m asl.infer_live
 ```
 
+Keys: **space** = translate the current phrase now · **c** = clear · **q / Esc** = quit.
+
 The window shows your skeleton, the committed word (debounced so it doesn't
-flicker), the live top guess + confidence, and a buffer-fill bar.
+flicker), the live top guess + confidence, a buffer-fill bar, and — once a phrase
+is built — the English sentence.
+
+### Sentence translation (phase 2)
+
+Committed signs accumulate into a phrase. After a short pause (or when you press
+space) the glosses go to **Claude** and come back as fluent English (e.g.
+`ME WANT COFFEE` → "I'd like a coffee"). It runs on a background thread, so the
+video never stalls.
+
+Set a key to enable it:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without a key it falls back to a plain word-join, so the demo still runs offline.
+The model is `claude-opus-4-8` by default; switch `LLM_MODEL` in
+[`asl/config.py`](asl/config.py) to `claude-haiku-4-5` for lower latency.
 
 ## Project layout
 

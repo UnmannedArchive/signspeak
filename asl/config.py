@@ -51,6 +51,13 @@ CONF_THRESHOLD = 0.6    # minimum softmax prob to show a prediction
 DEBOUNCE_FRAMES = 6     # consecutive consistent predictions before committing
 MIN_SAMPLES_PER_GLOSS = 7  # drop glosses with fewer available videos than this
 
+# --- Phase 2: gloss -> English (Claude) ------------------------------------
+# Default to Opus 4.8. For lower latency on this short task you can switch to
+# "claude-haiku-4-5". The translator falls back to a plain word-join when no
+# ANTHROPIC_API_KEY is set, so the demo still runs offline.
+LLM_MODEL = "claude-opus-4-8"
+FINALIZE_PAUSE_S = 2.5  # seconds of no new sign before a sentence is finalized
+
 # --- Vocabulary ------------------------------------------------------------
 # A curated set of common, visually distinct WLASL glosses for v1. dataset.py
 # intersects this with what actually exists in WLASL_v0.3.json and what videos
