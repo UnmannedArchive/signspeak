@@ -60,28 +60,32 @@ def _select_instances() -> dict[str, list[dict]]:
             if len(insts) >= C.MIN_SAMPLES_PER_GLOSS}
 
 
-def _clip_to_sequence(extractor: HolisticExtractor, video_path: Path,
-                      frame_start: int, frame_end: int) -> np.ndarray:
+def _clip_to_sequence(video_path: Path, frame_start: int, frame_end: int) -> np.ndarray:
     import cv2
 
-    cap = cv2.VideoCapture(str(video_path))
-    vectors = []
-    frame_idx = 0
-    ts = 0
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        frame_idx += 1
-        if frame_idx < frame_start:
-            continue
-        if frame_end != -1 and frame_idx > frame_end:
-            break
-        vec, _result, pose_present = extractor(frame, timestamp_ms=ts)
-        ts += 33  # ~30 fps spacing for monotonic timestamps
-        if pose_present:
-            vectors.append(vec)
-    cap.release()
+    # Fresh extractor per clip: IMAGE mode treats frames independently, and a new
+    # landmarker per video keeps no calculator state (segmentation smoothing,
+    # tracking) across clips that differ in resolution.
+    extractor = HolisticExtractor(running_mode="IMAGE")
+    try:
+        cap = cv2.VideoCapture(str(video_path))
+        vectors = []
+        frame_idx = 0
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            frame_idx += 1
+            if frame_idx < frame_start:
+                continue
+            if frame_end != -1 and frame_idx > frame_end:
+                break
+            vec, _result, pose_present = extractor(frame)
+            if pose_present:
+                vectors.append(vec)
+        cap.release()
+    finally:
+        extractor.close()
     if not vectors:
         return np.zeros((0, C.FEATURE_DIM), np.float32)
     return resample_sequence(np.stack(vectors), C.SEQ_LEN)
@@ -104,24 +108,20 @@ def build():
     label_to_idx = {g: i for i, g in enumerate(labels)}
     print(f"Building dataset for {len(labels)} glosses: {labels}")
 
-    extractor = HolisticExtractor(running_mode="VIDEO")
     X, y, splits = [], [], []
-    try:
-        for gloss in labels:
-            for inst in tqdm(selected[gloss], desc=gloss, leave=False):
-                vpath = _video_path(inst["video_id"])
-                seq = _clip_to_sequence(
-                    extractor, vpath,
-                    int(inst.get("frame_start", 1)),
-                    int(inst.get("frame_end", -1)),
-                )
-                if seq.shape[0] != C.SEQ_LEN:
-                    continue  # no pose detected anywhere in the clip
-                X.append(seq)
-                y.append(label_to_idx[gloss])
-                splits.append(inst.get("split", "train"))
-    finally:
-        extractor.close()
+    for gloss in labels:
+        for inst in tqdm(selected[gloss], desc=gloss, leave=False):
+            vpath = _video_path(inst["video_id"])
+            seq = _clip_to_sequence(
+                vpath,
+                int(inst.get("frame_start", 1)),
+                int(inst.get("frame_end", -1)),
+            )
+            if seq.shape[0] != C.SEQ_LEN:
+                continue  # no pose detected anywhere in the clip
+            X.append(seq)
+            y.append(label_to_idx[gloss])
+            splits.append(inst.get("split", "train"))
 
     X = np.stack(X).astype(np.float32)
     y = np.array(y, dtype=np.int64)
