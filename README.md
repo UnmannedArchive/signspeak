@@ -48,18 +48,26 @@ and that the training pipeline can learn separable signs from synthetic data.
 
 ## Train on WLASL
 
-1. **Get the videos.** The original WLASL URLs have rotted; the practical source
-   is the Kaggle mirror **`risangbaskoro/wlasl-processed`**. Download it and
-   arrange it as:
-
-   ```
-   data/wlasl/WLASL_v0.3.json
-   data/wlasl/videos/<video_id>.mp4
-   ```
-
-2. **Pick your vocabulary.** Edit `GLOSSES` in [`asl/config.py`](asl/config.py).
+1. **Pick your vocabulary.** Edit `GLOSSES` in [`asl/config.py`](asl/config.py).
    Words without enough downloaded videos are skipped automatically
    (`MIN_SAMPLES_PER_GLOSS`).
+
+2. **Get the videos.** Two options:
+
+   - **No-auth downloader (recommended).** The WLASL metadata `WLASL_v0.3.json`
+     comes from the [WLASL GitHub repo](https://github.com/dxli94/WLASL); the
+     original per-clip URLs have rotted, but several dictionary sources and
+     YouTube still serve video. `scripts/download_wlasl.py` pulls a subset for
+     your `GLOSSES` from those live sources and validates each file:
+
+     ```bash
+     curl -sSL -o data/wlasl/WLASL_v0.3.json \
+       https://raw.githubusercontent.com/dxli94/WLASL/master/start_kit/WLASL_v0.3.json
+     python -m scripts.download_wlasl   # needs yt-dlp (in requirements.txt)
+     ```
+
+   - **Kaggle mirror.** `risangbaskoro/wlasl-processed` has the full video set;
+     arrange it as `data/wlasl/WLASL_v0.3.json` + `data/wlasl/videos/<id>.mp4`.
 
 3. **Build the landmark dataset** (runs MediaPipe over every clip — slow):
 
@@ -72,6 +80,13 @@ and that the training pipeline can learn separable signs from synthetic data.
 
    ```bash
    python -m asl.train
+   ```
+
+5. **Verify recognition without a webcam** — evaluates the trained model on
+   held-out real clips:
+
+   ```bash
+   python -m scripts.verify_model
    ```
 
 ## Run the live demo

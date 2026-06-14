@@ -13,5 +13,8 @@ tqdm>=4.66
 # Phase 2: gloss -> English (optional at runtime; falls back if absent/no key)
 anthropic>=0.69
 
+# Data acquisition (scripts/download_wlasl.py)
+yt-dlp>=2025.1
+
 # Tests
 pytest>=8.0

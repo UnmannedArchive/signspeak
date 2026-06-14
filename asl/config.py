@@ -49,7 +49,7 @@ LSTM_DROPOUT = 0.3
 # --- Live inference --------------------------------------------------------
 CONF_THRESHOLD = 0.6    # minimum softmax prob to show a prediction
 DEBOUNCE_FRAMES = 6     # consecutive consistent predictions before committing
-MIN_SAMPLES_PER_GLOSS = 7  # drop glosses with fewer available videos than this
+MIN_SAMPLES_PER_GLOSS = 5  # drop glosses with fewer available videos than this
 
 # --- Phase 2: gloss -> English (Claude) ------------------------------------
 # Default to Opus 4.8. For lower latency on this short task you can switch to
@@ -63,9 +63,6 @@ FINALIZE_PAUSE_S = 2.5  # seconds of no new sign before a sentence is finalized
 # intersects this with what actually exists in WLASL_v0.3.json and what videos
 # are present on disk, so unavailable words are skipped automatically.
 GLOSSES = [
-    "hello", "thanks", "yes", "no", "please", "sorry", "help", "love",
-    "name", "more", "eat", "drink", "want", "good", "bad", "happy",
-    "sad", "you", "me", "what", "where", "who", "learn", "sign",
-    "deaf", "friend", "family", "work", "school", "book", "water", "food",
-    "fine", "stop", "go", "come", "like", "understand", "again", "finish",
+    "computer", "drink", "deaf", "hearing", "who", "candy", "finish", "wrong",
+    "before", "no", "hot", "like", "now", "orange", "kiss", "white", "fine", "yes",
 ]
