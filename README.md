@@ -25,6 +25,25 @@ normalized skeleton of hand + upper-body points, which strips away signer
 appearance, background, and resolution. That shared feature extractor lives in
 [`asl/landmarks.py`](asl/landmarks.py).
 
+## Current results (MVP)
+
+Trained on **225 real WLASL clips across 18 signs** (pulled live by
+`scripts/download_wlasl.py`), landmarks extracted with MediaPipe, classified by
+the LSTM:
+
+- **Held-out test accuracy: 35.3%** across 18 classes — **6.3× the 5.6% random
+  baseline**, so the model is clearly learning real signs, not guessing.
+- Several signs are essentially solved on held-out clips: `drink` (97–98%),
+  `hot` (99%), `deaf` (96%), `hearing` (86%), `computer` (85%).
+- A pre-trained `models/sign_lstm.pt` ships in the repo, so `python -m
+  asl.infer_live` runs immediately.
+
+It's a proof-of-concept, not a finished product — ~10 training clips per sign is
+thin. The clearest accuracy wins from here: more clips per gloss (raise the
+download cap / add the Kaggle mirror), prune confusable signs using the
+confusion matrix `python -m asl.train` prints, and add a few self-recorded
+samples to close the WLASL→your-webcam gap.
+
 ## Setup
 
 Requires Python 3.12.
