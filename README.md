@@ -1,8 +1,8 @@
-# ASL Word-Level Sign Recognizer
+# SignSpeak
 
-A local, real-time tool that watches you sign through your webcam and prints the
-recognized word on screen. It recognizes a fixed set of ~30–40 whole American
-Sign Language signs.
+**Real-time, word-level American Sign Language recognition.** A local tool that
+watches you sign through your webcam and prints the recognized word on screen. It
+recognizes a fixed set of ~30–40 whole American Sign Language signs.
 
 This is a **portfolio v1**, scoped on purpose. Full ASL translation (fluent,
 connected signing, with grammar carried by facial expression and spatial
@@ -52,7 +52,7 @@ reinforce first.
 Requires Python 3.12.
 
 ```bash
-cd ~/projects/asl-translator
+cd signspeak
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
