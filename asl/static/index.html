@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGNAL — American Sign Language, both ways</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0c0b10; --ink-2:#141219; --ink-3:#1c1925;
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+    --txt:#f4f1ea; --muted:#9b94a8;
+    --lime:#ccff4d; --lime-soft:rgba(204,255,77,.14);
+    --coral:#ff8d6b; --coral-soft:rgba(255,141,107,.14);
+    --display:'Bricolage Grotesque',serif; --body:'Hanken Grotesk',sans-serif; --mono:'DM Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:dark}
+  body{
+    margin:0; background:var(--ink); color:var(--txt); font-family:var(--body);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh;
+  }
+  /* atmosphere: drifting glows + grain */
+  .glow{position:fixed; border-radius:50%; filter:blur(90px); z-index:0; pointer-events:none; opacity:.5}
+  .glow.a{width:46vw; height:46vw; top:-14vw; left:-10vw; background:var(--lime); opacity:.10; animation:drift 22s ease-in-out infinite}
+  .glow.b{width:42vw; height:42vw; bottom:-16vw; right:-12vw; background:var(--coral); opacity:.10; animation:drift 26s ease-in-out infinite reverse}
+  .grain{position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  @keyframes drift{50%{transform:translate(6vw,4vw) scale(1.1)}}
+
+  .shell{position:relative; z-index:2; max-width:1180px; margin:0 auto; padding:0 28px 64px}
+
+  /* header */
+  header{display:flex; align-items:center; justify-content:space-between; padding:30px 0 20px}
+  .brand{display:flex; align-items:center; gap:14px}
+  .mark{width:42px; height:42px; border:1.5px solid var(--lime); border-radius:13px; display:grid; place-items:center;
+    color:var(--lime); font-size:20px; box-shadow:0 0 24px var(--lime-soft)}
+  .brand h1{font-family:var(--display); font-weight:800; font-size:26px; letter-spacing:-.02em; margin:0; line-height:1}
+  .brand p{margin:3px 0 0; color:var(--muted); font-size:12.5px; letter-spacing:.01em}
+  .pill{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.12em;
+    padding:7px 12px; border-radius:999px; border:1px solid var(--line-2); display:inline-flex; align-items:center; gap:8px}
+  .pill .dot{width:7px; height:7px; border-radius:50%; background:var(--muted)}
+  .pill.on{color:var(--lime); border-color:rgba(204,255,77,.35)} .pill.on .dot{background:var(--lime); box-shadow:0 0 10px var(--lime); animation:blink 1.6s infinite}
+  @keyframes blink{50%{opacity:.35}}
+
+  /* tabs */
+  nav{display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:28px}
+  .tab{appearance:none; background:none; border:none; color:var(--muted); cursor:pointer;
+    font-family:var(--body); font-weight:600; font-size:15px; padding:12px 4px; margin-right:22px; position:relative}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--txt)}
+  .tab.active::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--lime); border-radius:2px;
+    box-shadow:0 0 12px var(--lime-soft)}
+
+  .eyebrow{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.16em; color:var(--muted)}
+
+  /* recognize */
+  .reco{display:grid; grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr); gap:24px}
+  @media(max-width:860px){.reco{grid-template-columns:1fr}}
+  .stage{position:relative; border:1px solid var(--line); border-radius:20px; overflow:hidden; background:#000;
+    aspect-ratio:4/3; box-shadow:0 30px 80px -40px rgba(0,0,0,.9), 0 0 0 1px var(--line)}
+  .stage::after{content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+    box-shadow:inset 0 0 120px rgba(204,255,77,.06)}
+  .stage img{width:100%; height:100%; object-fit:cover; display:block}
+  .badge{position:absolute; top:14px; left:14px; z-index:3; font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; background:rgba(12,11,16,.7); backdrop-filter:blur(8px); border:1px solid var(--line-2);
+    padding:6px 11px; border-radius:999px; display:flex; align-items:center; gap:7px}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:#ff5b5b}
+  .badge.live .dot{background:var(--lime); box-shadow:0 0 10px var(--lime); animation:blink 1.4s infinite}
+
+  .side{display:flex; flex-direction:column; gap:16px}
+  .card{background:linear-gradient(180deg,var(--ink-2),rgba(20,18,25,.6)); border:1px solid var(--line); border-radius:18px; padding:18px 18px}
+  .card .eyebrow{display:block; margin-bottom:10px}
+  .word{font-family:var(--display); font-weight:800; font-size:clamp(38px,6vw,58px); line-height:.95; letter-spacing:-.03em}
+  .word.idle{color:var(--muted); opacity:.5}
+  .phrase{margin-top:10px; color:var(--lime); font-family:var(--mono); font-size:13px; letter-spacing:.04em; min-height:18px; word-break:break-word}
+  .bars .row{display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px; margin-top:12px; margin-bottom:5px}
+  .bars .row:first-child{margin-top:0}
+  .bars .nm{color:var(--txt)} .bars .pc{color:var(--muted)}
+  .track{height:7px; border-radius:6px; background:rgba(255,255,255,.06); overflow:hidden}
+  .track>div{height:100%; width:0; background:linear-gradient(90deg,var(--lime),#9fe000); border-radius:6px; transition:width .45s cubic-bezier(.2,.8,.2,1)}
+  .track>div.lead{box-shadow:0 0 14px var(--lime-soft)}
+  .english{border-color:rgba(255,141,107,.25); background:linear-gradient(180deg,var(--coral-soft),rgba(20,18,25,.4))}
+  .english .out{font-family:var(--display); font-weight:600; font-size:22px; line-height:1.3; min-height:30px; color:var(--txt)}
+  .english .out.empty{color:var(--muted); font-family:var(--body); font-weight:400; font-size:15px}
+  .controls{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .fps{font-family:var(--mono); font-size:12px; color:var(--muted)}
+
+  .btn{appearance:none; cursor:pointer; font-family:var(--body); font-weight:600; font-size:14px;
+    border-radius:11px; padding:11px 16px; border:1px solid var(--line-2); background:var(--ink-3); color:var(--txt); transition:.18s}
+  .btn:hover{border-color:var(--lime); color:var(--lime)}
+  .btn.primary{background:var(--lime); color:#0c0b10; border-color:var(--lime)}
+  .btn.primary:hover{filter:brightness(1.06); color:#0c0b10}
+  .btn.danger:hover{border-color:var(--coral); color:var(--coral)}
+
+  /* teach */
+  .teach{max-width:920px; margin:0 auto}
+  .teach .eyebrow{display:block; text-align:center}
+  .teach h2{font-family:var(--display); font-weight:800; letter-spacing:-.03em; text-align:center;
+    font-size:clamp(34px,5.5vw,56px); line-height:1.02; margin:12px 0 6px}
+  .teach h2 em{font-style:italic; color:var(--lime)}
+  .teach .sub{text-align:center; color:var(--muted); margin:0 auto 26px; max-width:520px; font-size:15px}
+  .ask{display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap}
+  .mic{position:relative; display:inline-flex; align-items:center; gap:10px; font-size:16px; font-weight:700;
+    padding:15px 26px; border-radius:999px; border:none; cursor:pointer; background:var(--lime); color:#0c0b10; font-family:var(--body)}
+  .mic .ico{font-size:18px}
+  .mic.listening{background:var(--coral); color:#160a06}
+  .mic.listening::before{content:""; position:absolute; inset:-4px; border-radius:999px; border:2px solid var(--coral);
+    animation:ring 1.3s ease-out infinite}
+  @keyframes ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.35);opacity:0}}
+  .field{flex:1; min-width:240px; max-width:440px; background:var(--ink-2); border:1px solid var(--line-2); color:var(--txt);
+    border-radius:999px; padding:14px 20px; font-size:15px; font-family:var(--body)}
+  .field:focus{outline:none; border-color:var(--lime)}
+  .status{text-align:center; color:var(--muted); font-size:13px; margin:18px 0 6px; min-height:18px}
+  .glossline{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:8px 0 26px; min-height:8px}
+  .chip{font-family:var(--mono); font-size:13px; letter-spacing:.04em; padding:6px 13px; border-radius:999px;
+    background:var(--lime-soft); color:var(--lime); border:1px solid rgba(204,255,77,.25)}
+  .chip .n{opacity:.55; margin-right:6px}
+  .steps{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:16px}
+  .step{background:var(--ink-2); border:1px solid var(--line); border-radius:16px; padding:12px; transition:transform .2s, border-color .2s; position:relative}
+  .step:hover{transform:translateY(-4px); border-color:var(--line-2)}
+  .step .num{position:absolute; top:18px; left:18px; z-index:2; font-family:var(--mono); font-size:11px; color:#0c0b10;
+    background:var(--lime); border-radius:7px; padding:2px 7px; font-weight:500}
+  .step video{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:11px; background:#000; display:block}
+  .step .fs{width:100%; aspect-ratio:1/1; border-radius:11px; border:1px dashed var(--line-2); display:grid; place-items:center;
+    text-align:center; color:var(--muted); font-size:13px; gap:6px}
+  .step .fs b{color:var(--txt); font-family:var(--display); font-size:18px}
+  .step .sg{font-family:var(--display); font-weight:700; font-size:17px; margin:12px 4px 4px}
+  .step .sh{color:var(--muted); font-size:12.5px; line-height:1.45; margin:0 4px}
+
+  footer{margin-top:48px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted);
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+
+  /* entrance */
+  .rise{opacity:0; transform:translateY(14px); animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes rise{to{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){
+    .rise{animation:none; opacity:1; transform:none}
+    .glow{animation:none} .badge.live .dot,.pill.on .dot{animation:none} .mic.listening::before{animation:none}
+  }
+</style>
+</head>
+<body>
+  <div class="glow a"></div><div class="glow b"></div><div class="grain"></div>
+
+  <div class="shell">
+    <header class="rise">
+      <div class="brand">
+        <div class="mark">✦</div>
+        <div>
+          <h1>SIGNAL</h1>
+          <p>American Sign Language — recognized &amp; taught, both ways</p>
+        </div>
+      </div>
+      <span class="pill" id="cam"><span class="dot"></span><span id="cam-txt">camera off</span></span>
+    </header>
+
+    <nav class="rise" style="animation-delay:.06s">
+      <button class="tab active" data-tab="recognize" onclick="showTab('recognize')">Recognize → English</button>
+      <button class="tab" data-tab="teach" onclick="showTab('teach')">Speak → Teach me to sign</button>
+    </nav>
+
+    <!-- RECOGNIZE -->
+    <section id="tab-recognize">
+      <div class="reco">
+        <div class="stage rise" style="animation-delay:.12s">
+          <span class="badge" id="badge"><span class="dot"></span><span id="badge-txt">camera off</span></span>
+          <img src="/video" alt="webcam feed">
+        </div>
+        <div class="side">
+          <div class="card rise" style="animation-delay:.18s">
+            <span class="eyebrow">Now signing</span>
+            <div class="word idle" id="word">—</div>
+            <div class="phrase" id="phrase"></div>
+          </div>
+          <div class="card bars rise" style="animation-delay:.24s">
+            <span class="eyebrow">Confidence · top 3</span>
+            <div id="topk"></div>
+          </div>
+          <div class="card english rise" style="animation-delay:.3s">
+            <span class="eyebrow">English</span>
+            <div class="out empty" id="sentence">sign a few words, then pause…</div>
+          </div>
+          <div class="controls rise" style="animation-delay:.36s">
+            <button class="btn" id="cambtn" onclick="toggleCamera()">Turn camera off</button>
+            <span class="fps"><span id="fps">0</span> fps</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEACH -->
+    <section id="tab-teach" style="display:none">
+      <div class="teach">
+        <span class="eyebrow rise">Reverse mode</span>
+        <h2 class="rise" style="animation-delay:.06s">Say it. <em>See how to sign it.</em></h2>
+        <p class="sub rise" style="animation-delay:.12s">Speak or type a sentence. It's reordered into ASL grammar, and each sign plays a real reference clip you can copy.</p>
+        <div class="ask rise" style="animation-delay:.18s">
+          <button class="mic" id="mic"><span class="ico">🎤</span><span id="mic-txt">Turn mic on</span></button>
+          <input class="field" id="sentence-in" placeholder="…or type, e.g. I want to drink water">
+          <button class="btn primary" id="go">Show me</button>
+        </div>
+        <div class="status" id="teach-status">Turn the mic on and speak, or type a sentence and hit “Show me”.</div>
+        <div class="glossline" id="teach-gloss"></div>
+        <div class="steps" id="steps"></div>
+      </div>
+    </section>
+
+    <footer class="rise" style="animation-delay:.4s">
+      <span>SIGNAL · 18-sign model · 44% held-out (≈8× chance)</span>
+      <span>MediaPipe landmarks → bidirectional LSTM → Claude</span>
+    </footer>
+  </div>
+
+<script>
+let RECOG_ACTIVE = true, camWanted = true;
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.getElementById('tab-recognize').style.display = name==='recognize'?'':'none';
+  document.getElementById('tab-teach').style.display = name==='teach'?'':'none';
+  RECOG_ACTIVE = (name==='recognize');
+}
+
+/* ---- camera toggle ---- */
+async function toggleCamera(){
+  camWanted = !camWanted;
+  document.getElementById('cambtn').textContent = camWanted ? 'Turn camera off' : 'Turn camera on';
+  try{ await fetch('/camera/' + (camWanted?'on':'off')); }catch(e){}
+}
+function setCamUI(on){
+  const pill=document.getElementById('cam'), badge=document.getElementById('badge');
+  pill.classList.toggle('on', on); document.getElementById('cam-txt').textContent = on?'camera on':'camera off';
+  badge.classList.toggle('live', on);
+  document.getElementById('badge-txt').textContent = on?'live':'camera off';
+  camWanted = on; document.getElementById('cambtn').textContent = on ? 'Turn camera off' : 'Turn camera on';
+}
+
+/* ---- recognize polling ---- */
+async function tick(){
+  if(!RECOG_ACTIVE) return;
+  try{
+    const s = await (await fetch('/state')).json();
+    const w=document.getElementById('word');
+    w.textContent = s.word || '—'; w.classList.toggle('idle', !s.word);
+    document.getElementById('phrase').textContent = (s.phrase||[]).join('  ');
+    const out=document.getElementById('sentence');
+    if(s.translating){ out.textContent='translating…'; out.classList.remove('empty'); }
+    else if(s.sentence){ out.textContent=s.sentence; out.classList.remove('empty'); }
+    document.getElementById('fps').textContent = s.fps ?? 0;
+    setCamUI(!!s.camera);
+    document.getElementById('topk').innerHTML = (s.topk||[]).map(([n,c],i)=>{
+      const p=Math.round(c*100);
+      return `<div class="row"><span class="nm">${n}</span><span class="pc">${p}%</span></div>
+              <div class="track"><div class="${i===0?'lead':''}" style="width:${p}%"></div></div>`;
+    }).join('') || '<div class="status" style="margin:6px 0 0;text-align:left">waiting for a clear pose…</div>';
+  }catch(e){}
+}
+setInterval(tick, 200); tick();
+
+/* ---- teach ---- */
+function setStatus(t){ document.getElementById('teach-status').textContent = t; }
+function renderTeach(d){
+  document.getElementById('teach-gloss').innerHTML = (d.gloss||[]).map((g,i)=>
+    `<span class="chip"><span class="n">${i+1}</span>${g}</span>`).join('');
+  document.getElementById('steps').innerHTML = (d.steps||[]).map((s,i)=>{
+    const media = s.video_id
+      ? `<video src="/clip/${s.video_id}.mp4" autoplay muted loop playsinline></video>`
+      : `<div class="fs"><span>✋ fingerspell</span><b>${s.gloss}</b></div>`;
+    return `<div class="step"><span class="num">${i+1}</span>${media}
+            <div class="sg">${s.gloss}</div><div class="sh">${s.how_to||''}</div></div>`;
+  }).join('') || '<div class="status">No signs found — try another sentence.</div>';
+}
+async function runTeach(text){
+  if(!text || !text.trim()) return;
+  setStatus('Planning the signs for “'+text+'” …');
+  document.getElementById('steps').innerHTML=''; document.getElementById('teach-gloss').innerHTML='';
+  try{
+    const d = await (await fetch('/teach?text='+encodeURIComponent(text))).json();
+    setStatus('“'+d.sentence+'”  →  '+(d.source==='claude'?'reordered into ASL grammar by Claude':'word order · set ANTHROPIC_API_KEY for ASL grammar + notes'));
+    renderTeach(d);
+  }catch(e){ setStatus('Sorry — could not plan the signs.'); }
+}
+document.getElementById('go').onclick = ()=> runTeach(document.getElementById('sentence-in').value);
+document.getElementById('sentence-in').addEventListener('keydown', e=>{ if(e.key==='Enter') runTeach(e.target.value); });
+
+/* ---- microphone on/off (continuous) ---- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog=null, micOn=false;
+function setMicUI(on){
+  const b=document.getElementById('mic');
+  b.classList.toggle('listening', on);
+  b.querySelector('.ico').textContent = on?'⏹':'🎤';
+  document.getElementById('mic-txt').textContent = on?'Listening… tap to stop':'Turn mic on';
+}
+function startMic(){
+  if(!SR){ setStatus('Speech recognition isn’t available in this browser — type your sentence instead.'); return; }
+  recog = new SR(); recog.lang='en-US'; recog.continuous=true; recog.interimResults=true;
+  recog.onresult = e=>{
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
+    }
+    document.getElementById('sentence-in').value = (final||interim).trim();
+    if(final.trim()) runTeach(final.trim());
+  };
+  recog.onerror = e=>{ setStatus('Mic: '+e.error+' — you can type instead.'); };
+  recog.onend = ()=>{ if(micOn){ try{recog.start();}catch(_){} } else setMicUI(false); };
+  try{ recog.start(); micOn=true; setMicUI(true); setStatus('Listening… speak a sentence.'); }
+  catch(e){ setStatus('Could not start mic.'); }
+}
+function stopMic(){ micOn=false; if(recog){ try{recog.stop();}catch(_){} } setMicUI(false); setStatus('Mic off.'); }
+document.getElementById('mic').onclick = ()=> micOn ? stopMic() : startMic();
+</script>
+</body>
+</html>
